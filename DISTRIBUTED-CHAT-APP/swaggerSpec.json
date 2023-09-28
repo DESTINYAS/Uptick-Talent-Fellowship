@@ -1,0 +1,380 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "DISTRIBUTED CHAT APPLICATION WITH SOCKET IO",
+    "version": "1.0.0",
+    "description": "This API handles all logic of user signup, login and all chatroom related activities by the user"
+  },
+  "paths": {
+    "/signup": {
+      "post": {
+        "tags": [
+          "User Signup/Login"
+        ],
+        "summary": "User Signup",
+        "description": "Create a new user account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User's email address."
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User's password (minimum length: 5)."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "User's name."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User registered successfully."
+          },
+          "400": {
+            "description": "Bad request. Invalid email, password, or missing name."
+          },
+          "409": {
+            "description": "Conflict. Email address already exists."
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": [
+          "User Signup/Login"
+        ],
+        "summary": "User Login",
+        "description": "Authenticate user and generate an access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User's email address."
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User's password."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User logged in successfully. Returns an access token."
+          },
+          "400": {
+            "description": "Bad request. Invalid email or password."
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "User Signup/Login"
+        ],
+        "summary": "Get details of the currently authenticated user.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. User is not authenticated."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chatrooms": {
+      "post": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Create a new chat room.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the chat room."
+                  },
+                  "userId": {
+                    "type": "string",
+                    "description": "ID of the user creating the chat room."
+                  }
+                },
+                "required": [
+                  "name",
+                  "userId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chat room created successfully."
+          },
+          "400": {
+            "description": "Chat room with the same name already exists."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Get a list of available chat rooms.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with a list of chat rooms."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chatrooms/join/{chatRoomId}": {
+      "post": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Join a chat room.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID."
+                  },
+                  "chatRoomId": {
+                    "type": "string",
+                    "description": "Chat room ID."
+                  }
+                },
+                "required": [
+                  "userId",
+                  "chatRoomId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with the chatRoomId."
+          },
+          "400": {
+            "description": "Bad request. User is already a member."
+          },
+          "404": {
+            "description": "User or chat room not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chatrooms/messages/{chatRoomId}": {
+      "get": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Get all messages in a chat room by chat room members, arranged by date created.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatRoomId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Chat room ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with a list of messages."
+          },
+          "403": {
+            "description": "Forbidden. User is not a member of the chat room."
+          },
+          "404": {
+            "description": "Chat room not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chatrooms/members/{chatRoomId}": {
+      "get": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Get all members of a chat room.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatRoomId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Chat room ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with a list of chat room members."
+          },
+          "403": {
+            "description": "Forbidden. User is not a member of the chat room."
+          },
+          "404": {
+            "description": "Chat room not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chatrooms/send-message/{chatRoomId}": {
+      "post": {
+        "tags": [
+          "Chatroom"
+        ],
+        "summary": "Send a message in a chat room.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatRoomId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Chat room ID where the message will be sent."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "ID of the user sending the message."
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "Content of the message."
+                  }
+                },
+                "required": [
+                  "userId",
+                  "content"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully."
+          },
+          "400": {
+            "description": "Bad request. User is not a member of the chat room."
+          },
+          "404": {
+            "description": "Chat room not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    }
+  },
+  "components": {},
+  "tags": []
+}
